@@ -1,0 +1,868 @@
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by Fernflower decompiler)
+//
+
+package com.umeng.fb.fragment;
+
+import android.annotation.SuppressLint;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build.VERSION;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.provider.MediaStore.Images.Media;
+import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout.OnRefreshListener;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.umeng.fb.FeedbackAgent;
+import com.umeng.fb.SyncListener;
+import com.umeng.fb.adapter.a;
+import com.umeng.fb.audio.AudioAgent;
+import com.umeng.fb.model.Conversation;
+import com.umeng.fb.model.Reply;
+import com.umeng.fb.model.Store;
+import com.umeng.fb.model.UserInfo;
+import com.umeng.fb.opus.OpusTool;
+import com.umeng.fb.push.FeedbackPush;
+import com.umeng.fb.util.Log;
+import com.umeng.fb.widget.InterceptTouchSwipeRefreshLayout;
+
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
+
+public class FeedbackFragment extends Fragment implements OnRefreshListener, OnTouchListener {
+    private static final String a = FeedbackFragment.class.getName();
+    private Button b;
+    private Button button;
+    private ImageButton d;
+    private EditText e;
+    private TextView textViewf;
+    private TextView textViewg;
+    private TextView textViewh;//h
+    private InterceptTouchSwipeRefreshLayout i;
+    private ListView conversationList;
+    /**
+     * 附加信息Spinner
+     */
+    private Spinner additionInfoSspinner;
+    private a l;
+    private FeedbackAgent feedbackAgent;
+    private Conversation conversation;
+    private FeedbackPush feedbackPush;
+    private View p;
+    private String[] q;
+    private String[] r;
+    private static final int s = 0;
+    private static final int t = 1;
+    private static final int u = 2;
+    private int v = 1;
+    private static final int w = 0;
+    private static final int x = 1;
+    private static final int y = 2;
+    private static final int z = 3;
+    private static final int A = 4;
+    private static final int B = 5;
+    public static final int HANDLE_MASSAGE_TYPE_REFRESH_START = 0;
+    private static final int C = 1;
+    private static final int D = 2;
+    private static final int E = 3;
+    public static final int HANDLE_MASSAGE_TYPE_ADD_IMAGE_REPLY = 4;
+    private static final int F = 5;
+    private static final int G = 1000;
+    private static final int H = 51000;
+    public static final String BUNDLE_KEY_CONVERSATION_ID = "conversation_id";
+    private static final int I = 300;
+    private static final int J = 1000;
+    private static final float K = 0.5F;
+    private final int L = 1;
+    private String uuid;
+    private Context mContext;//N
+    private List<Map<String, String>> O;
+    private AudioAgent audioAgent;
+    private Timer timer;
+    private String R;
+    private boolean S = false;
+    private boolean T = false;
+    private boolean U = false;
+    private static Handler mHandler;
+    private Dialog dialog;//M
+    private View dialog_view;
+    private TextView dialog_textviewY;
+    private TextView dialog_textviewZ;
+
+    public FeedbackFragment() {
+    }
+
+    // String id = new FeedbackAgent(getActivity()).getDefaultConversation().getId();
+    // intent.putExtra(FeedbackFragment.BUNDLE_KEY_CONVERSATION_ID, id);
+    public static FeedbackFragment newInstance(String id) {
+        Log.c(a, String.format("newInstance(id=%s)", new Object[]{id}));
+        FeedbackFragment feedbackFragment = new FeedbackFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString("conversation_id", id);
+        feedbackFragment.setArguments(bundle);
+        return feedbackFragment;
+    }
+
+    private void b() {
+        mHandler = new Handler() {
+            public void handleMessage(Message var1) {
+                switch(var1.what) {
+                     // TODO message what = 0
+                    case 0:
+                        FeedbackFragment.this.refresh();
+                        break;
+                    // TODO message what = 1
+                    case 1:
+                        if(!FeedbackFragment.this.U) {
+                            FeedbackFragment.this.d();
+                            FeedbackFragment.this.U = true;
+                        }
+                        break;
+                    // TODO message what = 2
+                    case 2:
+                        FeedbackFragment.this.f();
+                        break;
+                    // TODO message what = 3
+                    case 3:
+                        FeedbackFragment.this.dialog_view.setVisibility(8);
+                        FeedbackFragment.this.dialog_textviewY.setVisibility(0);
+                        FeedbackFragment.this.dialog_textviewY.setText("" + var1.arg1);
+                        FeedbackFragment.this.dialog_textviewZ.setText(FeedbackFragment.this.getResources().getString(textViewg.x(FeedbackFragment.this.mContext)));
+                        break;
+                    // TODO message what = 4    发送图片
+                    case 4:
+                        // TODO: 2015/12/15 反馈图片信息
+                        FeedbackFragment.this.conversation.addUserReply("", (String) var1.obj, "image_reply", -1.0F);
+                        FeedbackFragment.this.refresh();
+                        break;
+                    // TODO message what = 5
+                    case 5:
+                        FeedbackFragment.this.g();
+                }
+
+            }
+        };
+    }
+
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        this.mContext = this.getActivity();
+        this.init();
+        this.b();
+        Log.c(a, String.format("onCreateView(savedInstanceState=%s)", new Object[]{savedInstanceState}));
+        this.q = this.getResources().getStringArray(b.b(this.mContext));
+        this.r = this.getResources().getStringArray(b.a(this.mContext));
+        View var4 = inflater.inflate(textViewf.e(this.mContext), (ViewGroup) null, false);
+
+        //创建FeedbackAgent
+        this.feedbackAgent = new FeedbackAgent(this.getActivity());
+        // 创建FeedbackPush
+        this.feedbackPush = FeedbackPush.getInstance(this.getActivity());
+        // 添加推送回调  推送成功刷新 FeedbackFragment.this.refresh();
+        this.feedbackPush.setFBPushCallbacks(new FeedbackFragment.FeedbackPushCallbacks());
+        // newInstance()传递进来的 conversation_id
+        String conversation_id = this.getArguments().getString("conversation_id");
+        this.feedbackPush.setConversationId(conversation_id);
+        if(TextUtils.isEmpty(conversation_id)) {
+            return var4;
+        } else {
+            this.conversation = this.feedbackAgent.getConversationById(conversation_id);
+            this.feedbackPush.clearPushInfo();
+            if(this.conversation == null) {
+                return var4;
+            } else {
+                //加载回话列表
+                this.conversationList = (ListView)var4.findViewById(e.a(this.mContext));
+                this.p = var4.findViewById(e.g(this.mContext));
+                View var6 = inflater.inflate(textViewf.f(this.mContext), (ViewGroup) null, false);
+                View var7 = var6.findViewById(e.h(this.mContext));
+                this.textViewg = (TextView)var7.findViewById(e.b(this.mContext));
+                this.textViewf = (TextView)var7.findViewById(e.e(this.mContext));
+                this.b(this.a((String)null));
+                this.textViewg.setTextColor(this.getResources().getColor(button.a(this.mContext)));
+                var6.findViewById(e.i(this.mContext)).setBackgroundColor(this.getResources().getColor(button.a(this.mContext)));
+                var7.setOnClickListener(new OnClickListener() {
+                    public void onClick(View var1) {
+                        if(FeedbackFragment.this.v != 0) {
+                            FeedbackFragment.this.a(0, FeedbackFragment.this.p);
+                        }
+
+                    }
+                });
+                this.conversationList.setHeaderDividersEnabled(true);
+                this.conversationList.addHeaderView(var6);
+                if(com.umeng.fb.common.b.a(this.mContext).b()) {
+                    View var8 = inflater.inflate(textViewf.g(this.mContext), (ViewGroup) null, false);
+                    this.textViewh = (TextView)var8.findViewById(e.j(this.mContext));
+                    if(com.umeng.fb.common.b.a(this.mContext).c() != null) {
+                        this.textViewh.setText(com.umeng.fb.common.b.a(this.mContext).c());
+                    }
+
+                    this.conversationList.addHeaderView(var8);
+                }
+
+                this.l = new a(this.getActivity(), this.conversation);
+                this.conversationList.setAdapter(this.l);
+                this.i = (InterceptTouchSwipeRefreshLayout)var4.findViewById(e.k(this.mContext));
+                this.i.setOnRefreshListener(this);
+                this.i.setColorSchemeResources(new int[]{button.a(this.mContext), button.b(this.mContext), button.a(this.mContext), button.b(this.mContext)});
+                // 事件拦截
+                this.i.setInterceptTouch(new OnTouchListener() {
+                    public boolean onTouch(View var1, MotionEvent var2) {
+                        if(FeedbackFragment.this.v != 1 && var2.getAction() == MotionEvent.ACTION_UP) {
+                            FeedbackFragment.this.a(1, FeedbackFragment.this.p);
+                        }
+
+                        var1.performClick();
+                        return false;
+                    }
+                });
+                this.a(1, this.p);
+                this.refresh();
+                return var4;
+            }
+        }
+    }
+
+    private void a(final int var1, final View view) {
+        this.v = var1;
+        View var3;
+        if(var1 == 0) {
+            var3 = View.inflate(this.getActivity(), textViewf.h(this.mContext), (ViewGroup)null);
+            // 邮箱 QQ 手机 其他... 用户信息Spinner
+            this.additionInfoSspinner = (Spinner)var3.findViewById(e.l(this.mContext));
+            ArrayAdapter var4 = ArrayAdapter.createFromResource(this.getActivity(), b.a(this.mContext), textViewf.i(this.mContext));
+            var4.setDropDownViewResource(17367049);
+            this.additionInfoSspinner.setAdapter(var4);
+            ((ViewGroup)view).removeAllViews();
+            ((ViewGroup)view).addView(var3);
+            this.e = (EditText)view.findViewById(e.o(this.mContext));
+        } else {
+            ImageButton var5;
+            if(var1 == 1) {
+                var3 = View.inflate(this.getActivity(), textViewf.j(this.mContext), (ViewGroup)null);
+                ((ViewGroup)view).removeAllViews();
+                ((ViewGroup)view).addView(var3);
+                this.e = (EditText)view.findViewById(e.o(this.mContext));
+                this.d = (ImageButton)view.findViewById(e.n(this.mContext));
+                var5 = (ImageButton)view.findViewById(e.s(this.mContext));
+                if(!OpusTool.a()) {
+                    var5.setVisibility(View.GONE);
+                }
+
+                var5.setOnClickListener(new OnClickListener() {
+                    public void onClick(View var1) {
+                        FeedbackFragment.this.a(2, FeedbackFragment.this.p);
+                    }
+                });
+                this.d.setOnClickListener(new OnClickListener() {
+                    public void onClick(View var1) {
+                        Intent var2 = new Intent("android.intent.action.PICK", Media.EXTERNAL_CONTENT_URI);
+                        FeedbackFragment.this.startActivityForResult(var2, 1);
+                    }
+                });
+            } else if(var1 == 2) {
+                if(this.audioAgent == null) {
+                    this.audioAgent = AudioAgent.getInstance(this.mContext);
+                }
+
+                this.i();
+                var3 = View.inflate(this.getActivity(), textViewf.k(this.mContext), (ViewGroup)null);
+                ((ViewGroup)view).removeAllViews();
+                ((ViewGroup)view).addView(var3);
+                var5 = (ImageButton)view.findViewById(e.t(this.mContext));
+                var5.setOnClickListener(new OnClickListener() {
+                    public void onClick(View var1) {
+                        FeedbackFragment.this.a(1, FeedbackFragment.this.p);
+                    }
+                });
+                this.button = (Button)view.findViewById(e.u(this.mContext));
+                this.button.setOnTouchListener(this);
+            }
+        }
+
+        this.b = (Button)view.findViewById(e.m(this.mContext));
+        if(var1 == 0 && this.additionInfoSspinner != null) {
+            if(this.O == null) {
+                this.O = new ArrayList();
+            }
+
+            this.e.requestFocus();
+            this.additionInfoSspinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+                public void onItemSelected(AdapterView<?> var1, View var2, int var3, long var4) {
+                    switch (var3) {
+                        case 0:
+                            FeedbackFragment.this.e.setInputType(33);
+                            break;
+                        case 1:
+                            FeedbackFragment.this.e.setInputType(2);
+                            break;
+                        case 2:
+                            FeedbackFragment.this.e.setInputType(3);
+                            break;
+                        case 3:
+                            FeedbackFragment.this.e.setInputType(131073);
+                    }
+
+                    FeedbackFragment.this.e.setText(FeedbackFragment.this.a(FeedbackFragment.this.q[var3]));
+                    FeedbackFragment.this.e.requestFocus();
+                }
+
+                public void onNothingSelected(AdapterView<?> var1) {
+                    FeedbackFragment.this.e.setInputType(131073);
+                }
+            });
+            this.additionInfoSspinner.setSelection(this.c());
+        } else {
+            this.e.setInputType(131073);
+        }
+
+        if(var1 != 2 && this.e != null) {
+            this.a(var1);
+            this.b.setOnClickListener(new OnClickListener() {
+                public void onClick(View var1x) {
+                    String var2x = FeedbackFragment.this.e.getEditableText().toString().trim();
+                    if (!TextUtils.isEmpty(var2x)) {
+                        FeedbackFragment.this.e.getEditableText().clear();
+                        if (var1 == 0) {
+                            FeedbackFragment.this.c(var2x);
+                            FeedbackFragment.this.a(1, view);
+                        } else if (var1 == 1) {
+                            // TODO: 2015/12/15  反馈文字信息
+                            FeedbackFragment.this.conversation.addUserReply(var2x);
+                            FeedbackFragment.this.a();
+                            FeedbackFragment.this.refresh();
+                        }
+                    }
+
+                }
+            });
+        }
+
+    }
+
+    private void a(final int var1) {
+        if(TextUtils.isEmpty(this.e.getText().toString())) {
+            if(var1 == 0) {
+                this.a((Button)this.b, 3);
+            } else if(var1 == 1) {
+                this.a((Button)this.b, 4);
+            }
+        }
+
+        this.e.addTextChangedListener(new TextWatcher() {
+            public void afterTextChanged(Editable var1x) {
+                if(!TextUtils.isEmpty(FeedbackFragment.this.e.getText().toString().trim())) {
+                    if(var1 == 0) {
+                        FeedbackFragment.this.a((Button)FeedbackFragment.this.b, 2);
+                    } else if(var1 == 1) {
+                        FeedbackFragment.this.a((Button)FeedbackFragment.this.b, 5);
+                    }
+                } else if(var1 == 0) {
+                    FeedbackFragment.this.a((Button)FeedbackFragment.this.b, 3);
+                } else if(var1 == 1) {
+                    FeedbackFragment.this.a((Button)FeedbackFragment.this.b, 4);
+                }
+
+            }
+
+            public void beforeTextChanged(CharSequence var1x, int var2, int var3, int var4) {
+            }
+
+            public void onTextChanged(CharSequence var1x, int var2, int var3, int var4) {
+            }
+        });
+    }
+
+    public void onRefresh() {
+        Log.c(a, "onRefreshonRefresh");
+        if(com.umeng.fb.util.b.m(this.getActivity())) {
+            this.refresh();
+        } else {
+            this.i.setRefreshing(false);
+        }
+
+    }
+
+    public void refresh() {
+        SyncListener var1 = new SyncListener() {
+            public void onSendUserReply(List<Reply> var1) {
+            }
+
+            public void onReceiveDevReply(List<Reply> var1) {
+                FeedbackFragment.this.i.setRefreshing(false);
+                FeedbackFragment.this.a();
+            }
+        };
+        this.conversation.sync(var1);
+    }
+
+    @SuppressLint({"NewApi"})
+    void scrollToConversationPosition() {
+        if(this.l.getCount() > 0 && VERSION.SDK_INT >= 9) {
+            this.conversationList.smoothScrollToPosition(this.l.getCount());
+        }
+    }
+
+    // TODO: 2015/12/15 得到用户联系信息
+    private String a(String var1) {
+        UserInfo var2 = this.feedbackAgent.getUserInfo();
+        if(var2 != null) {
+            Map var3 = var2.getContact();
+            if(var3 == null) {
+                return null;
+            } else {
+                String var4 = "";
+                if(var1 == null) {
+                    Iterator var5 = var3.keySet().iterator();
+
+                    while(var5.hasNext()) {
+                        String var6 = (String)var5.next();
+                        if(var3.get(var6) != null && this.d(var6) != null) {
+                            var4 = var4 + this.d(var6) + ": " + (String)var3.get(var6) + "\t";
+                        }
+                    }
+
+                    if("".equals(var4)) {
+                        return null;
+                    }
+                } else {
+                    var4 = (String)var3.get(var1);
+                }
+
+                return var4;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    private void b(String var1) {
+        if(var1 != null) {
+            this.textViewf.setText(var1);
+            this.textViewg.setText(this.getResources().getString(textViewg.k(this.mContext)));
+        } else {
+            this.textViewf.setText(this.getResources().getString(textViewg.l(this.mContext)));
+            this.textViewg.setText(this.getResources().getString(textViewg.m(this.mContext)));
+        }
+
+    }
+
+    // TODO: 2015/12/15 提交联系信息 QQ、电话。。。
+    private void c(String var1) {
+        String var2 = this.q[this.additionInfoSspinner.getSelectedItemPosition()];
+        if(!var1.equals(this.a(var2))) {
+            UserInfo var3 = this.feedbackAgent.getUserInfo();
+            if(var3 == null) {
+                var3 = new UserInfo();
+            }
+
+            Object var4 = var3.getContact();
+            if(var4 == null) {
+                var4 = new HashMap();
+            }
+
+            ((Map)var4).put(var2, var1);
+            var3.setContact((Map)var4);
+            this.feedbackAgent.setUserInfo(var3);
+            this.b(this.a((String) null));
+            (new Thread(new Runnable() {
+                public void run() {
+                    Store store = Store.getInstance(FeedbackFragment.this.getActivity());
+                    JSONObject jsonObject = store.getUserInfo().toJson();
+                    // TODO: 2015/12/15 将uid及userinfo发送给umeng服务器 同FeedbackAgent.updateUserInfo()
+                    (new com.umeng.fb.net.a(FeedbackFragment.this.getActivity())).a(jsonObject);
+                }
+            })).start();
+        }
+    }
+
+    private String d(String var1) {
+        for(int var2 = 0; var2 < this.q.length; ++var2) {
+            if(this.q[var2].endsWith(var1)) {
+                return this.r[var2];
+            }
+        }
+
+        return null;
+    }
+
+    private int c() {
+        for(int var1 = 0; var1 < this.q.length; ++var1) {
+            if(this.a(this.q[var1]) != null) {
+                return var1;
+            }
+        }
+
+        return 0;
+    }
+
+    private void d() {
+        this.updateDialog(FeedbackFragment.DialogStatus.SlideUpCancel);
+        this.uuid = this.k();
+        this.dialog.show();
+        this.S = false;
+        this.T = false;
+        this.e();
+        if(!this.l()) {
+            this.updateDialog(FeedbackFragment.DialogStatus.NoRecordPermission);
+            this.b(5);
+        } else if(!this.audioAgent.recordStart(this.uuid)) {
+            this.updateDialog(FeedbackFragment.DialogStatus.AudioRecordErr);
+            this.b(5);
+        } else {
+            this.j();
+        }
+
+    }
+
+    private void e() {
+        Message var1 = new Message();
+        var1.what = 0;
+        if(this.l != null) {
+            a var10000 = this.l;
+            a.a().sendMessage(var1);
+        }
+
+    }
+
+    // TODO: 2015/12/15 onTouch 触摸事件, 判断发送及取消语音
+    public boolean onTouch(View var1, MotionEvent event) {
+        float startY = 0.0F;
+        float currentY = 0.0F;
+        switch(event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                startY = event.getY();
+                this.U = false;
+                this.a((Button)this.button, 0);
+                this.b(1);
+                break;
+            case MotionEvent.ACTION_UP:
+                this.a((Button)this.button, 1);
+                if(this.U) {
+                    this.f();
+                } else {
+                    this.U = true;
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                currentY = event.getY();
+                if(this.U) {
+                    // TODO 滑动距离超过80, 标记为释放取消
+                    if(startY - currentY > 80.0F) {
+                        this.updateDialog(FeedbackFragment.DialogStatus.ReleaseCancel);
+                        this.T = true;
+                    } else {
+                        if(!this.S) {
+                            this.updateDialog(FeedbackFragment.DialogStatus.SlideUpCancel);
+                        }
+
+                        this.T = false;
+                    }
+                }
+                break;
+            case 3:
+                this.a((Button)this.button, 1);
+                if(this.U) {
+                    this.f();
+                } else {
+                    this.U = true;
+                }
+        }
+
+        return false;
+    }
+
+    // TODO: 2015/12/15  反馈声音操作(发送? 取消?)
+    private void f() {
+        this.U = true;
+        if(this.timer != null) {
+            this.timer.cancel();
+        }
+
+        if(this.audioAgent != null && this.audioAgent.getAudioInitStatus()) {
+            if(this.R != null && this.R.equals(this.uuid)) {
+                this.g();
+            } else if(this.T) {
+                this.g();
+                this.audioAgent.recordShortStop();
+                // TODO 删除录音文件, 存储路径: getFilesDir().getAbsolutePath() + "/umeng/fb/audio/" + uuid + ".opus"
+                // getFilesDir().getAbsolutePath() + "/umeng/fb/audio/" + "R" + UUID.randomUUID() + ".opus"
+                com.umeng.fb.util.c.a(this.mContext, this.uuid);
+            } else {
+                // 录制时间太短, 直接取消对话框
+                if(this.audioAgent.getAudioDuration() < 0.5F) {
+                    this.updateDialog(FeedbackFragment.DialogStatus.TimeShort);
+                    this.audioAgent.recordShortStop();
+                    this.b(5);
+                } else if(this.audioAgent.getRecordStatus()) {
+                    this.g();
+                    int var1 = this.audioAgent.recordStop();
+                    if(var1 > 0) {
+                        // TODO: 2015/12/15 反馈声音信息
+                        this.conversation.addUserReply("", this.uuid, "audio_reply", this.audioAgent.getAudioDuration());
+                        this.R = this.uuid;
+                        this.scrollToConversationPosition();
+                    }
+                } else {
+                    this.g();
+                }
+
+            }
+        } else {
+            this.g();
+        }
+    }
+
+    private void b(final int scheduleTimes) {
+        short var2;
+        if(1 == scheduleTimes) {
+            var2 = 300;
+        } else {
+            var2 = 1000;
+        }
+
+        Timer var3 = new Timer();
+        var3.schedule(new TimerTask() {
+            public void run() {
+                FeedbackFragment.this.sendMessage(scheduleTimes);
+            }
+        }, (long)var2);
+    }
+
+    /**
+     * 取消对话框
+     */
+    private void g() {
+        if(this.dialog.isShowing()) {
+            this.dialog.dismiss();
+        }
+
+        this.a((Button) this.button, 1);
+    }
+
+    public static Handler getHandler() {
+        return mHandler;
+    }
+
+    public void onResume() {
+        super.onResume();
+        this.feedbackPush.setFbFragmentTag(true);
+    }
+
+    public void onPause() {
+        super.onPause();
+        this.feedbackPush.setFbFragmentTag(false);
+        if(this.timer != null) {
+            this.timer.cancel();
+        }
+
+        this.e();
+    }
+
+    public void onDestroy() {
+        super.onDestroy();
+        com.umeng.fb.util.c.a(this.mContext);
+    }
+
+    //TODO 更新Button状态
+    private void a(Button var1, int var2) {
+        switch(var2) {
+            case 0:
+                var1.setText(textViewg.u(this.mContext));
+                var1.setBackgroundDrawable(this.getResources().getDrawable(button.a(this.mContext)));
+                var1.setTextColor(this.getResources().getColor(17170443));
+                break;
+            case 1:
+                var1.setText(textViewg.t(this.mContext));
+                var1.setBackgroundDrawable(this.getResources().getDrawable(button.c(this.mContext)));
+                var1.setTextColor(this.getResources().getColor(17170444));
+                break;
+            case 2:
+                var1.setEnabled(true);
+                var1.setTextColor(this.getResources().getColor(17170444));
+                break;
+            case 3:
+                var1.setEnabled(false);
+                var1.setTextColor(this.getResources().getColor(button.c(this.mContext)));
+                break;
+            case 4:
+                this.d.setVisibility(0);
+                var1.setVisibility(8);
+                break;
+            case 5:
+                this.d.setVisibility(8);
+                var1.setVisibility(0);
+        }
+
+    }
+    //TODO 对话框状态
+    private void updateDialog(FeedbackFragment.DialogStatus status) {
+        switch(status) {
+            case SlideUpCancel:
+                this.dialog_view.setVisibility(View.VISIBLE);
+                this.dialog_textviewY.setVisibility(View.GONE);
+                this.dialog_view.setBackgroundDrawable(this.getResources().getDrawable(d.b(this.mContext)));
+                this.dialog_textviewZ.setText(this.getResources().getString(textViewg.w(this.mContext)));
+                break;
+            case ReleaseCancel:
+                this.dialog_view.setBackgroundDrawable(this.getResources().getDrawable(d.c(this.mContext)));
+                this.dialog_textviewZ.setText(this.getResources().getString(textViewg.v(this.mContext)));
+                break;
+            case CuntDown:
+                this.dialog_view.setVisibility(View.GONE);
+                this.dialog_textviewY.setVisibility(View.VISIBLE);
+                this.dialog_textviewZ.setText(this.getResources().getString(textViewg.x(this.mContext)));
+                break;
+            case TimeShort:
+                this.dialog_textviewZ.setText(this.getResources().getString(textViewg.y(this.mContext)));
+                break;
+            case NoRecordPermission:
+                this.dialog_textviewZ.setText(textViewg.z(this.mContext));
+                break;
+            case AudioRecordErr:
+                this.dialog_textviewZ.setText(textViewg.A(this.mContext));
+        }
+
+    }
+
+    /**
+     * 初始化
+     */
+    private void init() {
+        //public Dialog(Context context, int theme) {
+        this.dialog = new Dialog(this.mContext, textViewh.a(this.mContext));
+        this.dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        this.dialog.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        this.dialog.setContentView(textViewf.l(this.mContext));
+        this.dialog.setCanceledOnTouchOutside(true);
+        this.dialog_view = this.dialog.findViewById(e.v(this.mContext));
+        this.dialog_textviewY = (TextView)this.dialog.findViewById(e.x(this.mContext));
+        this.dialog_textviewZ = (TextView)this.dialog.findViewById(e.w(this.mContext));
+    }
+
+    private void sendMessage(int what) {
+        Message msg = Message.obtain();
+        msg.what = what;
+        mHandler.sendMessage(msg);
+    }
+
+    private void sendMessage(int what, int arg1) {
+        Message var3 = Message.obtain();
+        var3.what = what;
+        var3.arg1 = arg1;
+        mHandler.sendMessage(var3);
+    }
+
+    // TODO: 2015/12/15 输入法
+    private void i() {
+        InputMethodManager var1 = (InputMethodManager)this.mContext.getSystemService("input_method");
+        var1.hideSoftInputFromWindow(this.e.getWindowToken(), 2);
+    }
+
+    private void j() {
+        if(this.timer != null) {
+            this.timer.cancel();
+        }
+
+        this.timer = new Timer();
+        this.timer.schedule(new TimerTask() {
+            int a = 10;
+
+            public void run() {
+                FeedbackFragment.this.S = true;
+                if (FeedbackFragment.this.dialog.isShowing()) {
+                    if (this.a > 0) {
+                        FeedbackFragment.this.sendMessage(3, this.a);
+                        --this.a;
+                    } else {
+                        FeedbackFragment.this.sendMessage(2);//反馈声音操作(发送? 取消?)
+                        FeedbackFragment.this.T = false;
+                        this.cancel();
+                    }
+                }
+
+            }
+        }, 51000L, 1000L);
+    }
+
+    private String k() {
+        return "R" + UUID.randomUUID().toString();
+    }
+
+    // TODO 检测录音权限checkPermission
+    private boolean l() {
+        return com.umeng.fb.util.b.a(this.mContext, "android.permission.RECORD_AUDIO");
+    }
+
+    // TODO 获取图片
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(resultCode == -1 && requestCode == 1 && data != null) {
+            String[] var4 = data.getDataString().split("/");
+            Log.c(a, "data.getDataString -- " + data.getDataString());
+
+            if(com.umeng.fb.image.b.a(this.mContext, data.getData())) {
+                com.umeng.fb.image.b.a(this.mContext, data.getData(), this.k());
+            } else {
+                Toast.makeText(this.mContext, textViewg.B(this.mContext), 0).show();
+            }
+        }
+
+    }
+
+    class FeedbackPushCallbacks implements com.umeng.fb.push.c.a {
+        FeedbackPushCallbacks() {
+        }
+
+        public void onAddPushDevReply() {
+            FeedbackFragment.this.sendMessage(0);//FeedbackFragment.this.refresh();
+            FeedbackFragment.this.feedbackPush.clearPushInfo();
+        }
+    }
+
+    private static enum DialogStatus {
+        SlideUpCancel,
+        ReleaseCancel,
+        CuntDown,
+        TimeShort,
+        NoRecordPermission,
+        AudioRecordErr;
+
+        private DialogStatus() {
+        }
+    }
+}
