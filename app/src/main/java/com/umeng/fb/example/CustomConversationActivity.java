@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -13,6 +15,7 @@ import android.widget.Spinner;
 import com.umeng.fb.FeedbackAgent;
 import com.umeng.fb.SyncListener;
 import com.umeng.fb.audio.AudioAgent;
+import com.umeng.fb.example.fragment.b;
 import com.umeng.fb.fragment.FeedbackFragment;
 import com.umeng.fb.model.Conversation;
 import com.umeng.fb.model.Reply;
@@ -24,10 +27,13 @@ import com.umeng.message.PushAgent;
 
 import org.json.JSONObject;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
 
-public class CustomConversationActivity extends Activity {
+public class CustomConversationActivity extends FragmentActivity {
     private static final String TAG = CustomConversationActivity.class.getSimpleName();
     private static final int REQUEST_FOR_IMAGE = 100;
     // -----------Views------------------
@@ -41,6 +47,9 @@ public class CustomConversationActivity extends Activity {
     private AudioAgent audioAgent;
     private Conversation conversation;
     private FeedbackPush feedbackPush;
+    private String conversation_id;
+    FeedbackFragment feedbackFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,7 +66,8 @@ public class CustomConversationActivity extends Activity {
         feedbackAgent.openAudioFeedback();
         feedbackAgent.openFeedbackPush();
 
-        String conversation_id = getIntent().getStringExtra(FeedbackFragment.BUNDLE_KEY_CONVERSATION_ID);
+
+        conversation_id = getIntent().getStringExtra(FeedbackFragment.BUNDLE_KEY_CONVERSATION_ID);
         feedbackPush = FeedbackPush.getInstance(this);
         feedbackPush.setConversationId(conversation_id);
 
@@ -66,8 +76,9 @@ public class CustomConversationActivity extends Activity {
         PushAgent.getInstance(this).setDebugMode(true);
         PushAgent.getInstance(this).enable();
 
+        feedbackFragment = FeedbackFragment.newInstance(conversation_id);
 
-
+        getSupportFragmentManager().beginTransaction().add(R.id.container, feedbackFragment).commit();
 
     }
 
@@ -100,14 +111,27 @@ public class CustomConversationActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(resultCode == -1 && requestCode == 1 && data != null) {
+        if(resultCode == -1 && requestCode == REQUEST_FOR_IMAGE && data != null) {
             String[] var4 = data.getDataString().split("/");
             Log.i(TAG, "data.getDataString -- " + data.getDataString());
 
+//            FeedbackFragment feedbackFragment = FeedbackFragment.newInstance(conversation_id);
+            try {
+                Method method = FeedbackFragment.class.getDeclaredMethod("b");
+                method.setAccessible(true);
+                method.invoke(feedbackFragment);
+
+                Field field = FeedbackFragment.class.getDeclaredField("n");
+                field.setAccessible(true);
+                field.set(feedbackFragment, conversation);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
             if(com.umeng.fb.image.b.a(this, data.getData())) {
-                com.umeng.fb.image.b.a(this, data.getData(), k());
-                conversation.addUserReply("", conversation.getId(), "image_reply", -1.0F);
-                refresh();
+                com.umeng.fb.image.b.a(this, data.getData(), k());//执行异步任务后,做的就是下面的事情
+                //conversation.addUserReply("", k(), "image_reply", -1.0F);
+
             } else {
                 //Toast.makeText(this, textViewg.B(this.mContext), 0).show();
             }
@@ -139,6 +163,11 @@ public class CustomConversationActivity extends Activity {
 
     public void sendText(View view) {
         conversation.addUserReply(info.getText().toString());
+        refresh();
+    }
+
+    public void sendImage(String uuid){
+        conversation.addUserReply("", uuid, "image_reply", -1.0F);
         refresh();
     }
 }
