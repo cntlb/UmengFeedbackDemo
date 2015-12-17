@@ -9,6 +9,9 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.os.Handler;
@@ -54,6 +57,9 @@ import com.umeng.fb.widget.InterceptTouchSwipeRefreshLayout;
 
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -141,22 +147,22 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
         mHandler = new Handler() {
             public void handleMessage(Message var1) {
                 switch(var1.what) {
-                     // TODO message what = 0
+                     // TODO message what = 0   刷新会话列表
                     case 0:
                         FeedbackFragment.this.refresh();
                         break;
-                    // TODO message what = 1
+                    // TODO message what = 1    录音!
                     case 1:
                         if(!FeedbackFragment.this.U) {
                             FeedbackFragment.this.d();
                             FeedbackFragment.this.U = true;
                         }
                         break;
-                    // TODO message what = 2
+                    // TODO message what = 2    反馈声音信息
                     case 2:
                         FeedbackFragment.this.f();
                         break;
-                    // TODO message what = 3
+                    // TODO message what = 3    发送反馈是的信息, 倒计时,发送成功与否?
                     case 3:
                         FeedbackFragment.this.dialog_view.setVisibility(8);
                         FeedbackFragment.this.dialog_textviewY.setVisibility(0);
@@ -169,7 +175,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
                         FeedbackFragment.this.conversation.addUserReply("", (String) var1.obj, "image_reply", -1.0F);
                         FeedbackFragment.this.refresh();
                         break;
-                    // TODO message what = 5
+                    // TODO message what = 5    关闭Dialog
                     case 5:
                         FeedbackFragment.this.g();
                 }
@@ -533,20 +539,109 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
         return 0;
     }
 
+    // TODO: 2015/12/17  录制音频
+    long recordLength = 0L;
+    boolean isRecording = false;
+    int bufferSize;
+    AudioRecord audioRecord;
     private void d() {
         this.updateDialog(FeedbackFragment.DialogStatus.SlideUpCancel);
         this.uuid = this.k();
         this.dialog.show();
         this.S = false;
         this.T = false;
-        this.e();
-        if(!this.l()) {
+        this.e(); //sendMessage(0) 刷新会话
+        if(!this.checkPermission()) {//没有录音权限
             this.updateDialog(FeedbackFragment.DialogStatus.NoRecordPermission);
             this.b(5);
-        } else if(!this.audioAgent.recordStart(this.uuid)) {
+        }
+        // TODO  ----------------------准备录音-----------------------------------
+        //1.创建音频文件存储目录:
+         final String path = context.getFilesDir().getAbsolutePath() + "/umeng/fb/audio/cache/";
+        //2.计算最小缓冲大小，单位为字节:
+            bufferSize = 2 * AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+        //          this.b = 2 * AudioRecord.getMinBufferSize(16000, 16, 2);
+        // TODO 3. 创建AudioRecorder 初始化
+            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+        //          this.c = new AudioRecord(1, 16000, 16, 2, this.b);
+        //4.   判断 audioRecord.getState() == AudioRecord.STATE_INITIALIZED
+        //             return this.c.getState() == 1;
+        //TODO 5. 如果STATE_INITIALIZED成功, 下面开始录音:
+
+        if(audioRecord.getState() == AudioRecord.STATE_INITIALIZED){
+            recordLength = 0;
+            isRecording = true;
+            //开线程录音
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    if(audioRecord != null) {
+                        // 创建两个文件路径:
+                        String pathRaw = path + uuid + ".raw";
+                        String pathWav = path + uuid + ".wav";// 貌似没用到
+                        byte[] buffer = new byte[bufferSize];
+                        FileOutputStream out = null;
+                        boolean var3 = false;
+
+                        try {
+                            File fileRaw = new File(pathRaw);
+                            if(fileRaw.exists()) {
+                                fileRaw.delete();
+                            }
+
+                            out = new FileOutputStream(fileRaw);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                        // 使用 AudioRecord 录制音频
+                        audioRecord.startRecording();
+
+                        while(isRecording) {
+                            int result = audioRecord.read(buffer, 0, bufferSize);
+                            if(AudioRecord.ERROR_INVALID_OPERATION == result) {
+                                break;
+                            }
+
+                            try {
+                                out.write(buffer);
+                                recordLength += bufferSize;
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                break;
+                            }
+                        }
+
+                        // release resource
+                        isRecording = false;
+                        if(audioRecord != null) {
+                            if(AudioRecord.RECORDSTATE_STOPPED == audioRecord.getRecordingState()) {
+                                // handle AudioRecord RECORD STOPPED      we do nothing
+                            }
+
+                            audioRecord.stop();
+                            audioRecord.release();
+                            audioRecord = null;
+                        }
+                        //关流
+                        try {
+                            out.close();
+                        } catch (IOException var5) {
+                            var5.printStackTrace();
+                        }
+
+                    }
+                }
+            }).start();
+        }
+        // TODO ---------------- 录音结束 ---------------------------------
+        // TODO audioAgent.recordStart(this.uuid) 直接调用即可!
+        else if(!this.audioAgent.recordStart(this.uuid)) {
+            // AudioRecord.STATE_UNINITIALIZED 未初始化!
             this.updateDialog(FeedbackFragment.DialogStatus.AudioRecordErr);
-            this.b(5);
+            this.b(5);//关闭Dialog
         } else {
+            //audioRecord.getState() == AudioRecord.STATE_INITIALIZED
             this.j();
         }
 
@@ -570,10 +665,10 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
             case MotionEvent.ACTION_DOWN:
                 startY = event.getY();
                 this.U = false;
-                this.a((Button)this.button, 0);
-                this.b(1);
+                this.a((Button)this.button, 0);// 更改按钮文字
+                this.b(1);//sendMessage(1)
                 break;
-            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_UP: // 反馈声音
                 this.a((Button)this.button, 1);
                 if(this.U) {
                     this.f();
@@ -597,7 +692,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
                     }
                 }
                 break;
-            case 3:
+            case MotionEvent.ACTION_CANCEL:
                 this.a((Button)this.button, 1);
                 if(this.U) {
                     this.f();
@@ -650,9 +745,9 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
         }
     }
 
-    private void b(final int scheduleTimes) {
+    private void b(final int what) {
         short var2;
-        if(1 == scheduleTimes) {
+        if(1 == what) {
             var2 = 300;
         } else {
             var2 = 1000;
@@ -661,7 +756,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
         Timer var3 = new Timer();
         var3.schedule(new TimerTask() {
             public void run() {
-                FeedbackFragment.this.sendMessage(scheduleTimes);
+                FeedbackFragment.this.sendMessage(what);
             }
         }, (long)var2);
     }
@@ -796,6 +891,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
         var1.hideSoftInputFromWindow(this.e.getWindowToken(), 2);
     }
 
+    // TODO 反馈录制的声音
     private void j() {
         if(this.timer != null) {
             this.timer.cancel();
@@ -803,7 +899,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
 
         this.timer = new Timer();
         this.timer.schedule(new TimerTask() {
-            int a = 10;
+            int a = 10;// 发送倒计时
 
             public void run() {
                 FeedbackFragment.this.S = true;
@@ -819,7 +915,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
                 }
 
             }
-        }, 51000L, 1000L);
+        }, 51000L, 1000L);// 5秒后每隔1s执行一次从   10开始倒计时
     }
 
     private String k() {
@@ -827,7 +923,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
     }
 
     // TODO 检测录音权限checkPermission
-    private boolean l() {
+    private boolean checkPermission() {
         return com.umeng.fb.util.b.a(this.mContext, "android.permission.RECORD_AUDIO");
     }
 

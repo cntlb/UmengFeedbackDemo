@@ -67,6 +67,17 @@
             android:onClick="sendText"
             android:text="发送"/>
     </LinearLayout>
+    <TextView
+        android:id="@+id/deadTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="10"/>
+    <Button
+        android:id="@+id/record"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="按下录音"/>
 
     <LinearLayout
         android:orientation="horizontal"
