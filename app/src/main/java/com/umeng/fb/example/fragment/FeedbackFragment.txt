@@ -546,6 +546,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
     AudioRecord audioRecord;
     private void d() {
         this.updateDialog(FeedbackFragment.DialogStatus.SlideUpCancel);
+        // TODO 录音重新生成UUID
         this.uuid = this.k();
         this.dialog.show();
         this.S = false;
@@ -915,7 +916,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
                 }
 
             }
-        }, 51000L, 1000L);// 5秒后每隔1s执行一次从   10开始倒计时
+        }, 51000L, 1000L);// 51秒后每隔1s执行一次从   10开始倒计时
     }
 
     private String k() {

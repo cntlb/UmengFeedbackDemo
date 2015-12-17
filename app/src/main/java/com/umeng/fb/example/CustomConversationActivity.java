@@ -18,6 +18,7 @@ import android.widget.TextView;
 import com.umeng.fb.FeedbackAgent;
 import com.umeng.fb.SyncListener;
 import com.umeng.fb.audio.AudioAgent;
+import com.umeng.fb.example.fragment.b;
 import com.umeng.fb.fragment.FeedbackFragment;
 import com.umeng.fb.model.Conversation;
 import com.umeng.fb.model.Reply;
@@ -25,6 +26,7 @@ import com.umeng.fb.model.Store;
 import com.umeng.fb.model.UserInfo;
 import com.umeng.fb.net.a;
 import com.umeng.fb.push.FeedbackPush;
+import com.umeng.fb.widget.InterceptTouchSwipeRefreshLayout;
 import com.umeng.message.PushAgent;
 
 import org.json.JSONObject;
@@ -54,7 +56,6 @@ public class CustomConversationActivity extends FragmentActivity {
     private FeedbackPush feedbackPush;
     private String conversation_id;
     private String uuid;
-    FeedbackFragment feedbackFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,15 +73,20 @@ public class CustomConversationActivity extends FragmentActivity {
         record.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                switch(event.getAction()){
+                switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-
+                        recordAudio();
                         break;
-                     case MotionEvent.ACTION_UP:
-
+                    case MotionEvent.ACTION_UP:
+                        sending();
+                        if (audioAgent.getRecordStatus()) {
+                            int var1 = audioAgent.recordStop();
+                            if (var1 > 0) {
+                                sendAudio();
+                            }
+                        }
                         break;
                 }
-
                 return true;
             }
         });
@@ -99,9 +105,6 @@ public class CustomConversationActivity extends FragmentActivity {
         refresh();
         PushAgent.getInstance(this).setDebugMode(true);
         PushAgent.getInstance(this).enable();
-
-        feedbackFragment = FeedbackFragment.newInstance(conversation_id);
-        getSupportFragmentManager().beginTransaction().add(R.id.container, feedbackFragment).commit();
 
     }
 
@@ -135,41 +138,21 @@ public class CustomConversationActivity extends FragmentActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(resultCode == -1 && requestCode == REQUEST_FOR_IMAGE && data != null) {
-            String[] var4 = data.getDataString().split("/");
-            Log.i(TAG, "data.getDataString -- " + data.getDataString());
-
-//            FeedbackFragment feedbackFragment = FeedbackFragment.newInstance(conversation_id);
-            try {
-                Method method = FeedbackFragment.class.getDeclaredMethod("b");
-                method.setAccessible(true);
-                method.invoke(feedbackFragment);
-
-                Field field = FeedbackFragment.class.getDeclaredField("n");
-                field.setAccessible(true);
-                field.set(feedbackFragment, conversation);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
             if(com.umeng.fb.image.b.a(this, data.getData())) {
-                com.umeng.fb.image.b.a(this, data.getData(), uuid);//执行异步任务后,做的就是下面的事情
-                //conversation.addUserReply("", k(), "image_reply", -1.0F);
-
+                // TODO 这里改写了 com.umeng.fb.image.b.a 方法
+                b.a(this, data.getData(), k());//执行异步任务后,做的就是下面的事情
             } else {
                 //Toast.makeText(this, textViewg.B(this.mContext), 0).show();
             }
         }
     }
 
+    //生成随机文件名
     private String k() {
         return "R" + UUID.randomUUID().toString();
     }
 
-    // 发送图片
-    public void sendImage(View view) {
-    }
-
-
+    // 刷新会话
     public void refresh() {
         conversation.sync(new SyncListener() {
             @Override
@@ -194,45 +177,64 @@ public class CustomConversationActivity extends FragmentActivity {
         refresh();
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // 录音
+    ///////////////////////////////////////////////////////////////////////////
     public void recordAudio() {
         audioAgent = AudioAgent.getInstance(this);
+        uuid = k();
         boolean hasInitial = audioAgent.recordStart(uuid);
+        Log.i(TAG, "hasInitial --->" + hasInitial);
         if(hasInitial){
 
         }
     }
 
+    private void sendAudio() {
+        conversation.addUserReply("", uuid, "audio_reply", audioAgent.getAudioDuration());
+        refresh();
+    }
 
 
+    private static final int FEEDBACK_AUDIO_SENDING = 0x1;
+    private static final int FEEDBACK_AUDIO_COMPLETE = 0x2;
     private Handler mHandler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
-
+            switch (msg.what){
+                case FEEDBACK_AUDIO_SENDING:
+                    deadTime.setText(String.format("%ds", msg.arg1));
+                    break;
+                case FEEDBACK_AUDIO_COMPLETE:
+//                    if(audioAgent.getRecordStatus()) {
+//                        int var1 = audioAgent.recordStop();
+//                        if (var1 > 0) {
+//                           sendAudio();
+//                        }
+//                    }
+                    break;
+            }
         }
     };
 
+
     private Timer timer;
-    private void trySendAudio() {
+    private void sending() {
         if(this.timer != null) {
             this.timer.cancel();
         }
 
-        this.timer = new Timer();
-        this.timer.schedule(new TimerTask() {
+        timer = new Timer();
+        timer.schedule(new TimerTask() {
             int a = 10;// 发送倒计时
-
             public void run() {
-                if (FeedbackFragment.this.dialog.isShowing()) {
                     if (this.a > 0) {
-                        FeedbackFragment.this.sendMessage(3, this.a);
+                        Message.obtain(mHandler, FEEDBACK_AUDIO_SENDING, a, 0).sendToTarget();
                         --this.a;
                     } else {
-                        FeedbackFragment.this.sendMessage(2);//反馈声音操作(发送? 取消?)
-                        FeedbackFragment.this.T = false;
+                        Message.obtain(mHandler, FEEDBACK_AUDIO_COMPLETE).sendToTarget();
                         this.cancel();
                     }
-                }
-
             }
         }, 51000L, 1000L);// 5秒后每隔1s执行一次从   10开始倒计时
     }
