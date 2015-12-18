@@ -61,25 +61,22 @@ public class b {
     public static void a(final Context context, final Uri uri, final String ruuid) {
         (new AsyncTask<Void, Void, Boolean>() {
             protected Boolean doInBackground(Void... var1x) {
+                // 压缩图像, 得到缩略图
                 return Boolean.valueOf(b.c(context, uri, ruuid));
             }
 
-            protected void a(Boolean var1x) {
+            protected void onPostExecute(Boolean var1x) {
                 if(var1x.booleanValue()) {
-//                    Message var2x = new Message();
-//                    var2x.what = 4;
-//                    var2x.obj = ruuid;
-//                    FeedbackFragment.getHandler().sendMessage(var2x);
+                    // 反馈图片
                     ((CustomConversationActivity)context).sendImage(ruuid);
                 }
-
             }
         }).execute(new Void[0]);
     }
 
     private static boolean c(Context context, Uri uri, String ruuid) {
         boolean var3 = true;
-        String imagePath = context.getFilesDir().getAbsolutePath() + "/umeng/fb/image/" + ruuid + ".jpg";
+        String imagePath = c.b(context, ruuid);;
         File file = new File(imagePath);
         if(!file.getParentFile().exists()){
             file.getParentFile().mkdirs();
