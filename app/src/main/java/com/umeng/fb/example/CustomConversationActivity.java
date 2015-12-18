@@ -1,21 +1,23 @@
 package com.umeng.fb.example;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.umeng.fb.FeedbackAgent;
 import com.umeng.fb.SyncListener;
 import com.umeng.fb.audio.AudioAgent;
-import com.umeng.fb.example.fragment.b;
 import com.umeng.fb.fragment.FeedbackFragment;
 import com.umeng.fb.model.Conversation;
 import com.umeng.fb.model.Reply;
@@ -28,9 +30,10 @@ import com.umeng.message.PushAgent;
 import org.json.JSONObject;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 
 public class CustomConversationActivity extends FragmentActivity {
@@ -41,6 +44,8 @@ public class CustomConversationActivity extends FragmentActivity {
     private EditText infoEditText;
     private ImageView imageView;
     private EditText info;
+    private TextView deadTime;//倒计时
+    private Button record;
 
     //------------umeng--------------
     private FeedbackAgent feedbackAgent;
@@ -48,6 +53,7 @@ public class CustomConversationActivity extends FragmentActivity {
     private Conversation conversation;
     private FeedbackPush feedbackPush;
     private String conversation_id;
+    private String uuid;
     FeedbackFragment feedbackFragment;
 
     @Override
@@ -60,14 +66,32 @@ public class CustomConversationActivity extends FragmentActivity {
         // 发送图片
         imageView = (ImageView) findViewById(R.id.image);
         info = (EditText) findViewById(R.id.info);
+        //语音
+        deadTime = (TextView) findViewById(R.id.deadTime);
+        record = (Button) findViewById(R.id.record);
+        record.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch(event.getAction()){
+                    case MotionEvent.ACTION_DOWN:
+
+                        break;
+                     case MotionEvent.ACTION_UP:
+
+                        break;
+                }
+
+                return true;
+            }
+        });
 
         feedbackAgent = new FeedbackAgent(this);
         feedbackAgent.sync();
         feedbackAgent.openAudioFeedback();
         feedbackAgent.openFeedbackPush();
 
-
         conversation_id = getIntent().getStringExtra(FeedbackFragment.BUNDLE_KEY_CONVERSATION_ID);
+        uuid = k();
         feedbackPush = FeedbackPush.getInstance(this);
         feedbackPush.setConversationId(conversation_id);
 
@@ -77,7 +101,6 @@ public class CustomConversationActivity extends FragmentActivity {
         PushAgent.getInstance(this).enable();
 
         feedbackFragment = FeedbackFragment.newInstance(conversation_id);
-
         getSupportFragmentManager().beginTransaction().add(R.id.container, feedbackFragment).commit();
 
     }
@@ -129,7 +152,7 @@ public class CustomConversationActivity extends FragmentActivity {
             }
 
             if(com.umeng.fb.image.b.a(this, data.getData())) {
-                com.umeng.fb.image.b.a(this, data.getData(), k());//执行异步任务后,做的就是下面的事情
+                com.umeng.fb.image.b.a(this, data.getData(), uuid);//执行异步任务后,做的就是下面的事情
                 //conversation.addUserReply("", k(), "image_reply", -1.0F);
 
             } else {
@@ -169,5 +192,48 @@ public class CustomConversationActivity extends FragmentActivity {
     public void sendImage(String uuid){
         conversation.addUserReply("", uuid, "image_reply", -1.0F);
         refresh();
+    }
+
+    public void recordAudio() {
+        audioAgent = AudioAgent.getInstance(this);
+        boolean hasInitial = audioAgent.recordStart(uuid);
+        if(hasInitial){
+
+        }
+    }
+
+
+
+    private Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+
+        }
+    };
+
+    private Timer timer;
+    private void trySendAudio() {
+        if(this.timer != null) {
+            this.timer.cancel();
+        }
+
+        this.timer = new Timer();
+        this.timer.schedule(new TimerTask() {
+            int a = 10;// 发送倒计时
+
+            public void run() {
+                if (FeedbackFragment.this.dialog.isShowing()) {
+                    if (this.a > 0) {
+                        FeedbackFragment.this.sendMessage(3, this.a);
+                        --this.a;
+                    } else {
+                        FeedbackFragment.this.sendMessage(2);//反馈声音操作(发送? 取消?)
+                        FeedbackFragment.this.T = false;
+                        this.cancel();
+                    }
+                }
+
+            }
+        }, 51000L, 1000L);// 5秒后每隔1s执行一次从   10开始倒计时
     }
 }
