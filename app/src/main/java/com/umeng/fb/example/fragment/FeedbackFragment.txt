@@ -557,7 +557,7 @@ public class FeedbackFragment extends Fragment implements OnRefreshListener, OnT
             this.b(5);
         }
         // TODO  ----------------------准备录音-----------------------------------
-        //1.创建音频文件存储目录:
+        //1.创建音频文件缓存目录:
          final String path = context.getFilesDir().getAbsolutePath() + "/umeng/fb/audio/cache/";
         //2.计算最小缓冲大小，单位为字节:
             bufferSize = 2 * AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);

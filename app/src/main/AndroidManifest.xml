@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.umeng.fb.example" >
+    package="com.umeng.fb.example">
 
     <uses-sdk
         android:minSdkVersion="9"
@@ -27,14 +26,14 @@
     <uses-permission android:name="android.permission.GET_TASKS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:name=".AppApplication"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme">
         <meta-data
             android:name="UMENG_APPKEY"
             android:value="5668de5167e58ef6b7005099" />
@@ -45,7 +44,7 @@
         -->
         <activity
             android:name=".MainActivity"
-            android:label="@string/app_name" >
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -82,7 +81,7 @@
         <activity
             android:name=".ConversationDetailActivity"
             android:label="@string/feedback_title"
-            android:parentActivityName=".ConversationListActivity" >
+            android:parentActivityName=".ConversationListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.umeng.fb.example.ConversationListActivity" />
@@ -90,11 +89,10 @@
         <!-- umeng push -->
         <receiver
             android:name="com.umeng.message.NotificationProxyBroadcastReceiver"
-            android:exported="false" >
-        </receiver>
+            android:exported="false"></receiver>
         <receiver
             android:name="com.umeng.message.SystemReceiver"
-            android:process=":push" >
+            android:process=":push">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
@@ -110,14 +108,14 @@
         <receiver
             android:name="com.umeng.message.MessageReceiver"
             android:exported="false"
-            android:process=":push" >
+            android:process=":push">
             <intent-filter>
                 <action android:name="org.agoo.android.intent.action.RECEIVE" />
             </intent-filter>
         </receiver>
         <receiver
             android:name="com.umeng.message.ElectionReceiver"
-            android:process=":push" >
+            android:process=":push">
             <intent-filter>
                 <action android:name="org.agoo.android.intent.action.ELECTION_RESULT_V4" />
 
@@ -126,12 +124,12 @@
         </receiver>
         <receiver
             android:name="com.umeng.message.RegistrationReceiver"
-            android:exported="false" >
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.umeng.fb.example.intent.action.COMMAND" />
             </intent-filter>
         </receiver>
-        <receiver android:name="com.umeng.message.UmengMessageBootReceiver" >
+        <receiver android:name="com.umeng.message.UmengMessageBootReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
@@ -141,7 +139,7 @@
             android:name="com.umeng.message.UmengService"
             android:exported="true"
             android:label="PushService"
-            android:process=":push" >
+            android:process=":push">
             <intent-filter>
                 <action android:name="com.umeng.fb.example.intent.action.START" />
             </intent-filter>
@@ -160,7 +158,7 @@
         <service
             android:name="com.umeng.message.UmengMessageIntentReceiverService"
             android:exported="true"
-            android:process=":push" >
+            android:process=":push">
             <intent-filter>
                 <action android:name="org.android.agoo.client.MessageReceiverService" />
             </intent-filter>
@@ -170,7 +168,7 @@
         </service>
         <service
             android:name="com.umeng.message.UmengMessageCallbackHandlerService"
-            android:exported="false" >
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.umeng.messge.registercallback.action" />
             </intent-filter>
@@ -190,8 +188,8 @@
         <!-- V1.3.0添加的service，负责下载通知的资源 -->
         <service android:name="com.umeng.message.UmengDownloadResourceService" />
 
-        <activity android:name=".CustomConversationActivity" >
-        </activity>
+        <activity android:name=".feedback.CustomConversationActivity"></activity>
+        <activity android:name=".feedback.CustomConversationActivity2"></activity>
     </application>
 
 </manifest>

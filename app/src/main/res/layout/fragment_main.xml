@@ -43,7 +43,16 @@
         android:layout_height="wrap_content"
         android:text="自定义会话"
         android:id="@+id/custom"
+        android:layout_marginTop="26dp"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="81dp" />
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="自定义会话2"
+        android:id="@+id/custom2"
+        android:layout_below="@+id/custom"
+        android:layout_alignRight="@+id/custom"
+        android:layout_marginTop="44dp" />
 </RelativeLayout>

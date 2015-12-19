@@ -3,26 +3,24 @@
 // (powered by Fernflower decompiler)
 //
 
-package com.umeng.fb.example.fragment;
+package com.umeng.fb.example.feedback;
 //package com.umeng.fb.image;
 
 import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.graphics.Matrix;
 import android.graphics.Rect;
-import android.graphics.Bitmap.CompressFormat;
-import android.graphics.BitmapFactory.Options;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Message;
 import android.util.DisplayMetrics;
 import android.view.WindowManager;
 
-import com.umeng.fb.example.CustomConversationActivity;
-import com.umeng.fb.fragment.FeedbackFragment;
 import com.umeng.fb.util.c;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -58,7 +56,7 @@ public class b {
 
     }
 
-    public static void a(final Context context, final Uri uri, final String ruuid) {
+    public static void a(final Context context, final Uri uri, final String ruuid, final OnPostExecute onPostExecute) {
         (new AsyncTask<Void, Void, Boolean>() {
             protected Boolean doInBackground(Void... var1x) {
                 // 压缩图像, 得到缩略图
@@ -66,12 +64,21 @@ public class b {
             }
 
             protected void onPostExecute(Boolean var1x) {
-                if(var1x.booleanValue()) {
+                if(var1x.booleanValue() && context instanceof CustomConversationActivity ) {// 这个条件添加给CustomConversationActivity调用的
                     // 反馈图片
                     ((CustomConversationActivity)context).sendImage(ruuid);
+                    return;
+                }
+                if(onPostExecute != null) {
+                    onPostExecute.onPost(var1x);
+                    return;
                 }
             }
         }).execute(new Void[0]);
+    }
+
+    public interface OnPostExecute{
+        void onPost(Boolean success);
     }
 
     private static boolean c(Context context, Uri uri, String ruuid) {

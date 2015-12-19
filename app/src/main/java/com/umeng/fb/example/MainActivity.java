@@ -11,6 +11,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.umeng.fb.FeedbackAgent;
+import com.umeng.fb.example.feedback.CustomConversationActivity;
+import com.umeng.fb.example.feedback.CustomConversationActivity2;
 import com.umeng.fb.fragment.FeedbackFragment;
 import com.umeng.message.PushAgent;
 
@@ -128,6 +130,15 @@ public class MainActivity extends FragmentActivity {
                 public void onClick(View v) {
                     Intent intent = new Intent();
                     intent.setClass(getActivity(), CustomConversationActivity.class);
+                    startActivity(intent);
+                }
+            });
+
+            root.findViewById(R.id.custom2).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent();
+                    intent.setClass(getActivity(), CustomConversationActivity2.class);
                     startActivity(intent);
                 }
             });

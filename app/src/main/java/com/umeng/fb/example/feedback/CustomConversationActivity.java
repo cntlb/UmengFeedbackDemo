@@ -1,4 +1,4 @@
-package com.umeng.fb.example;
+package com.umeng.fb.example.feedback;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -18,7 +18,7 @@ import android.widget.TextView;
 import com.umeng.fb.FeedbackAgent;
 import com.umeng.fb.SyncListener;
 import com.umeng.fb.audio.AudioAgent;
-import com.umeng.fb.example.fragment.b;
+import com.umeng.fb.example.R;
 import com.umeng.fb.fragment.FeedbackFragment;
 import com.umeng.fb.model.Conversation;
 import com.umeng.fb.model.Reply;
@@ -26,13 +26,10 @@ import com.umeng.fb.model.Store;
 import com.umeng.fb.model.UserInfo;
 import com.umeng.fb.net.a;
 import com.umeng.fb.push.FeedbackPush;
-import com.umeng.fb.widget.InterceptTouchSwipeRefreshLayout;
 import com.umeng.message.PushAgent;
 
 import org.json.JSONObject;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -129,6 +126,8 @@ public class CustomConversationActivity extends FragmentActivity {
         }).start();
     }
 
+
+
     // 挑选图片
     public void pickImage(View view) {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -140,7 +139,7 @@ public class CustomConversationActivity extends FragmentActivity {
         if(resultCode == -1 && requestCode == REQUEST_FOR_IMAGE && data != null) {
             if(com.umeng.fb.image.b.a(this, data.getData())) {
                 // TODO 这里改写了 com.umeng.fb.image.b.a 方法
-                b.a(this, data.getData(), k());//执行异步任务后,做的就是下面的事情
+                b.a(this, data.getData(), k(), null);//执行异步任务后,做的就是下面的事情
             } else {
                 //Toast.makeText(this, textViewg.B(this.mContext), 0).show();
             }
